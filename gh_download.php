@@ -2,19 +2,16 @@
 
 <?php
 
-include('autoload.php');
-
 
 if (isset($argv[0]))
-    define('MODE', $argv[0]);
+    define('GH_DOWN_MODE', $argv[0]);
 else
-    define('MODE', 'init');
+    define('GH_DOWN_MODE', 'init');
 
 
 
 
-
-function gh_download($user, $repo, $sfile = null, $branch = 'master') {
+function gh_download($user, $repo, $sfile = null, $branch = 'master', $type = 'init') {
 
     $repo_dir = LIBPATH.$repo; //директория где будет установлен пакет
     
@@ -23,38 +20,42 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master') {
       
     $sfile = $repo_dir.'/'.$sfile;
 
-    if (MODE !== 'update' and file_exists($sfile)) {
+    if ($type !== 'update' and file_exists($sfile)) {
         require($sfile); // автозагрузка библиотеки
         return True;
     }
 
-    $file = 'http://github.com/'.$user.'/'.$repo.'/zipball/'.$branch; //получаем файл для занрузки
+    $zipfile = 'http://github.com/'.$user.'/'.$repo.'/zipball/'.$branch; //получаем файл для занрузки
     $repo_dir = LIBPATH.$repo; //директория где будет установлен пакет
     $work_dir = $repo_dir.'_work'; // директория для распаковки
     $newfile = LIBPATH.$repo.'.zip';
 
-    if (MODE == 'init' and is_dir($work_dir)) //файл уже скачен
-        return;
+    if ($type == 'init' and !file_exists($newfile)) { //защита от повторного скачивания
 
-
-    if (!copy($file, $newfile)) {
-        echo "не удалось скопировать $file...\n";
-        return;
-    }else {
-        echo $file." импортирован... \n";
-    }    
+        if (!copy($zipfile, $newfile)) {
+            gh_down_log('Не удалось скопировать '.$zipfile);
+            return;
+        }
+        else 
+           gh_down_log('Успешно скопирован '.$zipfile);    
    
-    $zip = new ZipArchive;
-    $res = $zip->open($newfile);
-    if ($res === TRUE) {
-        $zip->extractTo($work_dir);
-        $zip->close();
-        echo $newfile." успешно разархивирован... \n"; 
+        $zip = new ZipArchive;
+        $res = $zip->open($newfile);
+        if ($res === TRUE) {
+            $zip->extractTo($work_dir);
+            $zip->close();
+            gh_down_log('Успешно разархивирован '.$newfile);
+        }
+        else {
+            gh_down_log('Неудалось разархивировать '.$newfile);
+            return False;
+        }    
+
         $files = scandir($work_dir);
         foreach ($files as $file) {
             if (strpos($file, $user.'-'.$repo) !== False) { // ищем папку с последним коммитом
                 rename($work_dir.'/'.$file.'/', $repo_dir);
-                removedir($work_dir);
+                gh_down_removedir($work_dir);
                 break;
             }    
         }        
@@ -64,6 +65,7 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master') {
 
     require($sfile);
     
+    gh_down_reg($user.'_'.$repo, $zipfile);
 
     return;
 }
@@ -71,7 +73,8 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master') {
 
 
 
-function removedir($dir) {
+#очищаем директорию с файлаит
+function gh_down_removedir($dir) {
     
     if ($files = glob($dir.'/*')) {
        
@@ -85,5 +88,37 @@ function removedir($dir) {
        }
 
     }
+    
     rmdir($dir);
+}
+
+
+# пишем в лог файл
+function gh_down_log($warning) {
+    
+    $log = 'gh_down.log';
+    
+    if (file_exists($log))
+        $fp = fopen($log,'a+');
+    else {
+        $fp = fopen($log,'w');
+        chmod($log, 0660);
+    }
+
+    fwrite($fp, '['.date('d.m.y\ H:i:s').'] '.$warning.chr(13));
+    fclose($fp);
+
+    return;
+
+}
+
+#пишем регистрационный файл
+function gh_down_reg($filereg, $filesource){
+
+     $fp = fopen('register/'.$filereg, 'w');
+     fwrite($fp, $filesource);
+     fclose($fp);
+
+     return;
+
 }

@@ -1,0 +1,3 @@
+[submodule "libs/hottags"]
+	path = libs/hottags
+	url = git@github.com:akdelf/hottags.git
