@@ -9,7 +9,7 @@
 	
 	# подгружаемые библиотеки c github
 	#gh_download('akdelf', 'hottags');
-	gh_download('akdelf', 'fAK');
+	gh_autoload('akdelf', 'fAK');
 
 
 

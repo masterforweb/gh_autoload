@@ -11,7 +11,7 @@ else
 
 
 
-function gh_download($user, $repo, $sfile = null, $branch = 'master', $type = 'init') {
+function gh_autoload($user, $repo, $sfile = null, $branch = 'master', $type = 'init') {
 
     $repo_dir = LIBPATH.$repo; //директория где будет установлен пакет
     
@@ -33,21 +33,21 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master', $type = 'i
     if ($type == 'init' and !file_exists($newfile)) { //защита от повторного скачивания
 
         if (!copy($zipfile, $newfile)) {
-            gh_down_log('Не удалось скопировать '.$zipfile);
+            gh_autoload_log('Не удалось скопировать '.$zipfile);
             return;
         }
         else 
-           gh_down_log('Успешно скопирован '.$zipfile);    
+           gh_autoload_log('Успешно скопирован '.$zipfile);    
    
         $zip = new ZipArchive;
         $res = $zip->open($newfile);
         if ($res === TRUE) {
             $zip->extractTo($work_dir);
             $zip->close();
-            gh_down_log('Успешно разархивирован '.$newfile);
+            gh_autoload_log('Успешно разархивирован '.$newfile);
         }
         else {
-            gh_down_log('Неудалось разархивировать '.$newfile);
+            gh_autoload_log('Неудалось разархивировать '.$newfile);
             return False;
         }    
 
@@ -55,7 +55,7 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master', $type = 'i
         foreach ($files as $file) {
             if (strpos($file, $user.'-'.$repo) !== False) { // ищем папку с последним коммитом
                 rename($work_dir.'/'.$file.'/', $repo_dir);
-                gh_down_removedir($work_dir);
+                gh_autoload_rm($work_dir);
                 break;
             }    
         }        
@@ -65,7 +65,7 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master', $type = 'i
 
     require($sfile);
     
-    gh_down_reg($user.'_'.$repo, $zipfile);
+    gh_autoload_reg($user.'_'.$repo, $zipfile);
 
     return;
 }
@@ -74,14 +74,14 @@ function gh_download($user, $repo, $sfile = null, $branch = 'master', $type = 'i
 
 
 #очищаем директорию с файлаит
-function gh_down_removedir($dir) {
+function gh_autoload_rm($dir) {
     
     if ($files = glob($dir.'/*')) {
        
        foreach($files as $file) {
          
          if (is_dir($file))
-            removedir($file);
+            gh_autoload_rm($file);
          elseif(is_file($file))   
              unlink($file);
 
@@ -93,8 +93,8 @@ function gh_down_removedir($dir) {
 }
 
 
-# пишем в лог файл
-function gh_down_log($warning) {
+# write log file
+function gh_autoload_log($warning) {
     
     $log = 'gh_down.log';
     
@@ -112,12 +112,17 @@ function gh_down_log($warning) {
 
 }
 
-#пишем регистрационный файл
-function gh_down_reg($filereg, $filesource){
+#write registred files
+function gh_autoload_reg($filereg, $filesource){
 
-     $fp = fopen('register/'.$filereg, 'w');
-     fwrite($fp, $filesource);
-     fclose($fp);
+    $reg_fold = 'register';
+
+    if (!is_dir($reg_fold)) 
+        mkdir($reg_fold, 0775);
+
+    $fp = fopen('register'.'/'.$filereg, 'w');
+    fwrite($fp, $filesource);
+    fclose($fp);
 
      return;
 
