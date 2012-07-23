@@ -1,7 +1,7 @@
 <?php
 
 	
-	require('gh_download.php');
+	require('gh_autoload.php');
 
 	# папка где буду лежать библиотека
 	define('LIBPATH', 'libs/');
