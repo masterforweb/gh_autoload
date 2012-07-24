@@ -1,7 +1,4 @@
-#!/usr/local/bin/php -q
-
 <?php
-
 
 
 function gh_autoload($user, $repo, $branch = 'master', $sfile = null, $type = 'init') {
