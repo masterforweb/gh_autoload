@@ -3,25 +3,18 @@
 <?php
 
 
-if (isset($argv[0]))
-    define('GH_DOWN_MODE', $argv[0]);
-else
-    define('GH_DOWN_MODE', 'init');
 
-
-
-
-function gh_autoload($user, $repo, $sfile = null, $branch = 'master', $type = 'init') {
+function gh_autoload($user, $repo, $branch = 'master', $sfile = null, $type = 'init') {
 
     $repo_dir = LIBPATH.$repo; //директория где будет установлен пакет
-    
-    if ($sfile == null)
-        $sfile = $repo.'.php';    
-      
-    $sfile = $repo_dir.'/'.$sfile;
 
-    if ($type !== 'update' and file_exists($sfile)) {
-        require($sfile); // автозагрузка библиотеки
+    if ($sfile !== null)
+        $sfile = $repo_dir.'/'.$sfile;
+
+    
+    if ($type == 'init' and file_exists($sfile)) {
+        if ($sfile !== null)
+            require($sfile); // автозагрузка библиотеки
         return True;
     }
 
@@ -33,37 +26,45 @@ function gh_autoload($user, $repo, $sfile = null, $branch = 'master', $type = 'i
     if ($type == 'init' and !file_exists($newfile)) { //защита от повторного скачивания
 
         if (!copy($zipfile, $newfile)) {
-            gh_autoload_log('Не удалось скопировать '.$zipfile);
+            gh_autoload_log('Не удалось скопировать ...'.$zipfile);
             return;
         }
         else 
-           gh_autoload_log('Успешно скопирован '.$zipfile);    
-   
-        $zip = new ZipArchive;
-        $res = $zip->open($newfile);
-        if ($res === TRUE) {
-            $zip->extractTo($work_dir);
-            $zip->close();
-            gh_autoload_log('Успешно разархивирован '.$newfile);
-        }
-        else {
-            gh_autoload_log('Неудалось разархивировать '.$newfile);
-            return False;
-        }    
+           gh_autoload_log('Успешно скопирован ...'.$zipfile);
+    }  
 
-        $files = scandir($work_dir);
-        foreach ($files as $file) {
-            if (strpos($file, $user.'-'.$repo) !== False) { // ищем папку с последним коммитом
-                rename($work_dir.'/'.$file.'/', $repo_dir);
-                gh_autoload_rm($work_dir);
-                break;
-            }    
-        }        
+
+    if (!file_exists($newfile)) {
+        gh_autoload_log('Не удалось закачать ...'.$zipfile);
+        return False;
+    }        
+   
+    $zip = new ZipArchive;
+    $res = $zip->open($newfile);
+    if ($res === TRUE) {
+        $zip->extractTo($work_dir);
+        $zip->close();
+        gh_autoload_log('Успешно разархивирован ...'.$newfile);
+    }
+    else {
+        gh_autoload_log('Неудалось разархивировать ...'.$newfile);
+        return False;
+    }    
+
+    $files = scandir($work_dir);
+    foreach ($files as $file) {
+        if (strpos($file, $user.'-'.$repo) !== False) { // ищем папку с последним коммитом
+            rename($work_dir.'/'.$file.'/', $repo_dir);
+            gh_autoload_rm($work_dir);
+            break;
+        }    
+            
     }
 
     unlink($newfile);
 
-    require($sfile);
+    if ($sfile !== null)
+        require($sfile);
     
     gh_autoload_reg($user.'_'.$repo, $zipfile);
 
