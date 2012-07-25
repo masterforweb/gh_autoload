@@ -8,6 +8,8 @@ function gh_autoload($user, $repo, $branch = 'master', $sfile = null, $type = 'i
     if ($sfile !== null)
         $sfile = $repo_dir.'/'.$sfile;
 
+    echo $sfile;
+
     
     if ($type == 'init' and file_exists($sfile)) {
         if ($sfile !== null)
@@ -74,16 +76,24 @@ function gh_autoload($user, $repo, $branch = 'master', $sfile = null, $type = 'i
 #очищаем директорию с файлаит
 function gh_autoload_rm($dir) {
     
-    if ($files = glob($dir.'/*')) {
-       
-       foreach($files as $file) {
-         
-         if (is_dir($file))
-            gh_autoload_rm($file);
-         elseif(is_file($file))   
-             unlink($file);
+   
+    if ($files = scandir($dir, 1)) {
 
-       }
+           
+        foreach($files as $file) {
+         
+          $file = trim($file);
+        
+          if($file === '.' || $file === '..') 
+             continue; 
+
+          $object = $dir.'/'.$file;
+
+          if (is_dir($object))
+            gh_autoload_rm($object);
+          elseif(is_file($object))   
+            unlink($object);
+        }  
 
     }
     
