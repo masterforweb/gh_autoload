@@ -8,8 +8,6 @@ function gh_autoload($user, $repo, $branch = 'master', $sfile = null, $type = 'i
     if ($sfile !== null)
         $sfile = $repo_dir.'/'.$sfile;
 
-    echo $sfile;
-
     
     if ($type == 'init' and file_exists($sfile)) {
         if ($sfile !== null)
